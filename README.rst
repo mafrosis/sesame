@@ -1,0 +1,2 @@
+Sesame: config file encryption
+==============================
