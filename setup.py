@@ -16,6 +16,7 @@ if sys.argv[-1] == 'publish':
 
 packages = [
     'sesame',
+    'sesame.flask',
 ]
 
 requires = [
@@ -34,8 +35,8 @@ setup(
     author_email='dev@mafro.net',
     url='http://github.com/mafrosis/sesame',
     packages=packages,
-    package_data={'': ['LICENSE', 'NOTICE'], 'requests': ['*.pem']},
-    package_dir={'sesame': 'sesame'},
+    package_data={'': ['LICENSE']},
+    package_dir={'': '.'},
     include_package_data=True,
     install_requires=requires,
     license=open('LICENSE').read(),
