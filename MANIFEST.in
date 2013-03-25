@@ -1,1 +1,4 @@
-include README.rst LICENSE requirements.txt
+include LICENSE
+include README.rst
+include requirements.txt
+recursive-include scripts *
