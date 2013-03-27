@@ -35,7 +35,7 @@ setup(
     author_email='dev@mafro.net',
     url='http://github.com/mafrosis/sesame',
     packages=packages,
-    package_data={'': ['LICENSE', 'NOTICE'], 'requests': ['*.pem']},
+    package_data={'': ['LICENSE']},
     package_dir={'': '.'},
     include_package_data=True,
     install_requires=requires,
