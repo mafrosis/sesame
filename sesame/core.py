@@ -1,4 +1,5 @@
 import os
+import zlib
 
 from keyczar.keys import AesKey
 
@@ -56,7 +57,7 @@ def encrypt_config(config, keyfile=None):
     with open(config, "r") as f:
         data = f.read()
     with open("{0}.encrypted".format(config), "w") as f:
-        f.write(key.Encrypt(data))
+        f.write(key.Encrypt(zlib.compress(data)))
 
     return config
 
@@ -105,7 +106,7 @@ def decrypt_config(config, keyfile):
     with open("{0}.encrypted".format(config), "r") as f:
         data = f.read()
     with open(config, "w") as f:
-        f.write(key.Decrypt(data))
+        f.write(zlib.decompress(key.Decrypt(data)))
 
     return config
 
