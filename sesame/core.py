@@ -27,13 +27,13 @@ def encrypt_config(config, keyfile=None):
     if keyfile is None or os.path.exists(keyfile) is False:
         key = None
 
-        if os.path.exists("key.pem"):
+        if os.path.exists("sesame.key"):
             try:
-                with open("key.pem", "r") as f:
+                with open("sesame.key", "r") as f:
                     data = f.read()
                 key = AesKey.Read(data)
 
-                res = raw_input(("Encryption key appears to exist in key.pem. "
+                res = raw_input(("Encryption key appears to exist in sesame.key. "
                                  "Use this? [Y/n] "))
                 if len(res) > 0 and not res.lower().startswith('y'):
                     key = None
@@ -46,7 +46,7 @@ def encrypt_config(config, keyfile=None):
                 return None
 
             key = AesKey.Generate()
-            with open("key.pem", "w") as f:
+            with open("sesame.key", "w") as f:
                 f.write(str(key))
     else:
         with open(keyfile, "r") as f:
