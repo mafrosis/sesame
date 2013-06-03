@@ -72,7 +72,7 @@ can benefit from (almost) automatic integration:
 
 Then sesame's encrypt/decrypt commands are available via your manage script:
 
-.. code-block::
+.. code-block:: bash
 
     $ ./manage.py sesame
     Please provide a command:
