@@ -44,6 +44,9 @@ def entrypoint():
         if conf_path:
             print 'Application config {0} at {1}'.format(args.term, conf_path)
 
+            if args.keyfile is None:
+                print 'Encryption key created at key.pem'
+
     except ConfigError as e:
         sys.stderr.write('{0}\n'.format(e))
         sys.exit(1)
