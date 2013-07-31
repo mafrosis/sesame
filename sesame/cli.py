@@ -22,6 +22,9 @@ def entrypoint():
     pencrypt.add_argument(
         '-k', '--keyfile', action='store',
         help='Path to keyczar encryption key')
+    pencrypt.add_argument(
+        '-f', '--force', action='store',
+        help='Force creation of new encryption key')
 
     # parser for the options on decrypt
     pdecrypt = subparsers.add_parser('decrypt',
@@ -35,12 +38,15 @@ def entrypoint():
     pdecrypt.add_argument(
         '-k', '--keyfile', action='store', required=True,
         help='Path to your keyczar encryption key')
+    pdecrypt.add_argument(
+        '-f', '--force', action='store',
+        help='Force overwrite of existing config file')
 
     args = parser.parse_args()
 
     try:
         # call the relevant function
-        conf_path = args.func(args.config, args.keyfile)
+        conf_path = args.func(args.config, args.keyfile, args.force)
         if conf_path:
             print 'Application config {0} at {1}'.format(args.term, conf_path)
 

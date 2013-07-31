@@ -4,7 +4,7 @@ import zlib
 from keyczar.keys import AesKey
 
 
-def encrypt_config(config, keyfile=None):
+def encrypt_config(config, keyfile=None, force=False):
     """
     Encrypt a config file.
 
@@ -27,7 +27,7 @@ def encrypt_config(config, keyfile=None):
     if keyfile is None or os.path.exists(keyfile) is False:
         key = None
 
-        if os.path.exists("sesame.key"):
+        if force is False and os.path.exists("sesame.key"):
             try:
                 with open("sesame.key", "r") as f:
                     data = f.read()
@@ -40,7 +40,7 @@ def encrypt_config(config, keyfile=None):
             except (ValueError, KeyError):
                 pass
 
-        if key is None:
+        if force is False and key is None:
             res = raw_input("Encryption key not provided. Create? [Y/n] ")
             if len(res) > 0 and not res.lower().startswith('y'):
                 return None
@@ -62,7 +62,7 @@ def encrypt_config(config, keyfile=None):
     return config
 
 
-def decrypt_config(config, keyfile):
+def decrypt_config(config, keyfile, force=False):
     """
     Decrypt a config file.
 
@@ -93,7 +93,7 @@ def decrypt_config(config, keyfile):
             keyfile
         ))
 
-    if os.path.exists(config):
+    if force is False and os.path.exists(config):
         res = raw_input("Application config already exists. Overwrite? [y/N] ")
         if not res.lower().startswith('y'):
             return None
