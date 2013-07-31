@@ -3,7 +3,7 @@
 #
 
 __title__ = 'sesame'
-__version__ = '0.2.0'
+__version__ = '0.2.1'
 __build__ = 0x000020
 __author__ = 'Matt Black'
 __license__ = 'Simplified BSD License'
