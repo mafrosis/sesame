@@ -16,7 +16,6 @@ if sys.argv[-1] == 'publish':
 
 packages = [
     'sesame',
-    'sesame.flask',
 ]
 
 requires = [
