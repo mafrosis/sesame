@@ -20,9 +20,7 @@ def encrypt_config(config, keyfile=None, force=False):
     if config is None:
         raise ConfigError("You must supply the path to your config file.")
     elif not os.path.exists(config):
-        raise ConfigError("Application config doesn't exist at {0}".format(
-            config
-        ))
+        raise ConfigError("Application config doesn't exist at {0}".format(config))
 
     if keyfile is None or os.path.exists(keyfile) is False:
         key = None
@@ -33,8 +31,7 @@ def encrypt_config(config, keyfile=None, force=False):
                     data = f.read()
                 key = AesKey.Read(data)
 
-                res = raw_input(("Encryption key appears to exist in sesame.key. "
-                                 "Use this? [Y/n] "))
+                res = raw_input("Encryption key appears to exist in sesame.key. Use this? [Y/n] ")
                 if len(res) > 0 and not res.lower().startswith('y'):
                     key = None
             except (ValueError, KeyError):
@@ -76,22 +73,18 @@ def decrypt_config(config, keyfile, force=False):
        ConfigError
     """
     if config is None:
-        raise ConfigError(("You must supply the path to your encrypted config "
-                           "file."))
+        raise ConfigError("You must supply the path to your encrypted config file.")
     else:
         if config.endswith(".encrypted"):
             config = config[0:-10]
 
         if not os.path.exists("{0}.encrypted".format(config)):
-            raise ConfigError("Encrypted config doesn't exist at {0}.encrypted"
-                              .format(config))
+            raise ConfigError("Encrypted config doesn't exist at {0}.encrypted".format(config))
 
     if keyfile is None:
         raise ConfigError("Encryption keys are required for decryption!")
     elif not os.path.exists(keyfile):
-        raise ConfigError("Encryption key doesn't exist at {0}".format(
-            keyfile
-        ))
+        raise ConfigError("Encryption key doesn't exist at {0}".format(keyfile))
 
     if force is False and os.path.exists(config):
         res = raw_input("Application config already exists. Overwrite? [y/N] ")
