@@ -10,31 +10,28 @@ def entrypoint():
     )
     subparsers = parser.add_subparsers(dest='command')
 
-    # parser for the options on encrypt
-    pencrypt = subparsers.add_parser('encrypt',
-        help='Encrypt a config file'
-    )
-    pencrypt.set_defaults(func=encrypt_config, term='encrypt')
-
-    pencrypt.add_argument(
+    # setup the arguments for both encrypt and decrypt
+    parent_parser = argparse.ArgumentParser(add_help=False)
+    parent_parser.add_argument(
         '-c', '--config', action='store', required=True,
         help='Path to your app config')
-    pencrypt.add_argument(
+    parent_parser.add_argument(
         '-k', '--keyfile', action='store',
         help='Path to keyczar encryption key')
 
-    # parser for the options on decrypt
+    # setup parser for encrypt command
+    pencrypt = subparsers.add_parser('encrypt',
+        parents=[parent_parser],
+        help='Encrypt a config file',
+    )
+    pencrypt.set_defaults(func=encrypt_config, term='encrypt')
+
+    # setup parser for decrypt command
     pdecrypt = subparsers.add_parser('decrypt',
-        help='Decrypt a config file'
+        parents=[parent_parser],
+        help='Decrypt a config file',
     )
     pdecrypt.set_defaults(func=decrypt_config, term='decrypt')
-
-    pdecrypt.add_argument(
-        '-c', '--config', action='store', required=True,
-        help='Path to your encrypted app config')
-    pdecrypt.add_argument(
-        '-k', '--keyfile', action='store',
-        help='Path to your keyczar encryption key')
     pdecrypt.add_argument(
         '-f', '--force', action='store_true',
         help='Force overwrite of existing config file')
