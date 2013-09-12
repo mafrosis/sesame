@@ -4,7 +4,7 @@ import zlib
 from keyczar.keys import AesKey
 
 
-def encrypt_config(config, keyfile=None, force=False):
+def encrypt_config(config, keyfile=None):
     """
     Encrypt a config file.
 
@@ -22,10 +22,12 @@ def encrypt_config(config, keyfile=None, force=False):
     elif not os.path.exists(config):
         raise ConfigError("Application config doesn't exist at {0}".format(config))
 
+    key_created = False
+
     if keyfile is None or os.path.exists(keyfile) is False:
         key = None
 
-        if force is False and os.path.exists("sesame.key"):
+        if os.path.exists("sesame.key"):
             try:
                 with open("sesame.key", "r") as f:
                     data = f.read()
@@ -37,7 +39,7 @@ def encrypt_config(config, keyfile=None, force=False):
             except (ValueError, KeyError):
                 pass
 
-        if force is False and key is None:
+        if key is None:
             res = raw_input("Encryption key not provided. Create? [Y/n] ")
             if len(res) > 0 and not res.lower().startswith('y'):
                 return None
@@ -45,6 +47,8 @@ def encrypt_config(config, keyfile=None, force=False):
             key = AesKey.Generate()
             with open("sesame.key", "w") as f:
                 f.write(str(key))
+
+            key_created = True
     else:
         with open(keyfile, "r") as f:
             data = f.read()
@@ -56,7 +60,7 @@ def encrypt_config(config, keyfile=None, force=False):
     with open("{0}.encrypted".format(config), "w") as f:
         f.write(key.Encrypt(zlib.compress(data)))
 
-    return config
+    return key_created
 
 
 def decrypt_config(config, keyfile, force=False):
@@ -67,6 +71,7 @@ def decrypt_config(config, keyfile, force=False):
         config (str): The path to the config file to be encrypted.
         keyfile (str): The keyfile to use for decryption.
     Kwargs:
+        force (bool): Force overwrite of decrypted file.
     Returns:
         string or None. The path to the decrypted file, or None.
     Raises:
@@ -101,7 +106,7 @@ def decrypt_config(config, keyfile, force=False):
     with open(config, "w") as f:
         f.write(zlib.decompress(key.Decrypt(data)))
 
-    return config
+    return True
 
 
 class ConfigError(Exception):
