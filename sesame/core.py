@@ -86,20 +86,34 @@ def decrypt_config(config, keyfile, force=False):
         if not os.path.exists("{0}.encrypted".format(config)):
             raise ConfigError("Encrypted config doesn't exist at {0}.encrypted".format(config))
 
-    if keyfile is None:
-        raise ConfigError("Encryption keys are required for decryption!")
-    elif not os.path.exists(keyfile):
-        raise ConfigError("Encryption key doesn't exist at {0}".format(keyfile))
+    key = None
+    if os.path.exists("sesame.key"):
+        try:
+            with open("sesame.key", "r") as f:
+                data = f.read()
+            key = AesKey.Read(data)
 
-    if force is False and os.path.exists(config):
-        res = raw_input("Application config already exists. Overwrite? [y/N] ")
-        if not res.lower().startswith('y'):
-            return None
+            res = raw_input("Encryption key appears to exist in sesame.key. Use this? [Y/n] ")
+            if len(res) > 0 and not res.lower().startswith('y'):
+                key = None
+        except (ValueError, KeyError):
+            pass
 
-    with open(keyfile, "r") as f:
-        data = f.read()
+    if key is None:
+        if keyfile is None:
+            raise ConfigError("Encryption keys are required for decryption!")
+        elif not os.path.exists(keyfile):
+            raise ConfigError("Encryption key doesn't exist at {0}".format(keyfile))
 
-    key = AesKey.Read(data)
+        if force is False and os.path.exists(config):
+            res = raw_input("Application config already exists. Overwrite? [y/N] ")
+            if not res.lower().startswith('y'):
+                return None
+
+        with open(keyfile, "r") as f:
+            data = f.read()
+
+        key = AesKey.Read(data)
 
     with open("{0}.encrypted".format(config), "r") as f:
         data = f.read()
