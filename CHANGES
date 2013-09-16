@@ -1,3 +1,9 @@
+0.3.0
+
+App CLI now imitates tar
+Supports storing multiple files
+Secure extraction/decryption using tempfile
+
 0.2.4
 
 Standardised CLI and improved validation

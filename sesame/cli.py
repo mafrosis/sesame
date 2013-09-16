@@ -1,10 +1,13 @@
 import argparse
 import collections
+import contextlib
 import fnmatch
 import os
+import shutil
 import sys
+import tarfile
+import tempfile
 import zlib
-
 
 from keyczar.keys import AesKey
 from keyczar.errors import KeyczarError
@@ -26,13 +29,10 @@ def parse_command_line():
     parser = argparse.ArgumentParser(
         description='Sesame config file encryption and decryption'
     )
-    subparsers = parser.add_subparsers(dest='command')
+    subparsers = parser.add_subparsers()
 
     # setup the arguments for both encrypt and decrypt
     parent_parser = argparse.ArgumentParser(add_help=False)
-    parent_parser.add_argument(
-        '-c', '--config', required=True,
-        help='Path to your app config')
     parent_parser.add_argument(
         '-k', '--keyfile',
         help='Path to keyczar encryption key')
@@ -40,9 +40,15 @@ def parse_command_line():
     # setup parser for encrypt command
     pencrypt = subparsers.add_parser('encrypt',
         parents=[parent_parser],
-        help='Encrypt a config file',
+        help='Encrypt one or more files',
     )
     pencrypt.set_defaults(mode=MODE_ENCRYPT)
+    pencrypt.add_argument(
+        'outputfile',
+        help='Encrypted file to be created')
+    pencrypt.add_argument(
+        'inputfile', nargs='+',
+        help='Files to be encrypted')
     pencrypt.add_argument(
         '-f', '--force', action='store_true',
         help='Force overwrite of existing encrypted file')
@@ -50,9 +56,12 @@ def parse_command_line():
     # setup parser for decrypt command
     pdecrypt = subparsers.add_parser('decrypt',
         parents=[parent_parser],
-        help='Decrypt a config file',
+        help='Decrypt a file created with Sesame',
     )
     pdecrypt.set_defaults(mode=MODE_DECRYPT)
+    pdecrypt.add_argument(
+        'inputfile',
+        help='File to be decrypted')
     pdecrypt.add_argument(
         '-f', '--force', action='store_true',
         help='Force overwrite of existing decrypted file')
@@ -107,72 +116,89 @@ def _main(args):
 
 
     if args.mode == MODE_ENCRYPT:
-        # check destination exists
-        if args.force is False and os.path.exists('{0}.sesame'.format(args.config)):
-            if _ask_overwrite('{0}.sesame'.format(args.config)) is False:
+        # check if destination exists
+        if args.force is False and os.path.exists(args.outputfile):
+            if _ask_overwrite(args.outputfile) is False:
                 return
 
-        if not os.path.exists(args.config):
-            raise ConfigError('Application config doesn\'t exist at {0}'.format(args.config))
+        # args.inputfile is a list of files
+        for f in args.inputfile:
+            if not os.path.exists(f):
+                raise ConfigError('File doesn\'t exist at {0}'.format(f))
 
-        # encrypt the input file
-        try:
-            with open(args.config, 'rb') as i:
-                data = keys[0].Encrypt(zlib.compress(i.read()))
-        except KeyczarError as e:
-            raise ConfigError(
-                'An error occurred in keyczar.Encrypt\n  {0}:{1}'.format(e.__class__.__name__, e)
-            )
+        with make_secure_temp_directory() as working_dir:
+            # create a tarfile of inputfiles
+            with tarfile.open(os.path.join(working_dir, 'sesame.tar'), 'w') as tar:
+                for name in args.inputfile:
+                    tar.add(name)
 
-        # write the encrypted file
-        with open('{0}.sesame'.format(args.config), 'wb') as o:
-            o.write(data)
-
-        print 'Application config encrypted at {0}.sesame'.format(args.config)
+            try:
+                # encrypt the tarfile
+                with open(os.path.join(working_dir, 'sesame.tar'), 'rb') as i:
+                    with open(args.outputfile, 'wb') as o:
+                        o.write(keys[0].Encrypt(zlib.compress(i.read())))
+            except KeyczarError as e:
+                raise ConfigError(
+                    'An error occurred in keyczar.Encrypt\n  {0}:{1}'.format(e.__class__.__name__, e)
+                )
 
 
     elif args.mode == MODE_DECRYPT:
-        # if input file doesn't exist, and .sesame does, ask to decrypt .sesame
-        if not os.path.exists(args.config) and os.path.exists('{0}.sesame'.format(args.config)):
-            if _confirm('Decrypt {0}.sesame?'.format(args.config), default=True):
-                output_path = args.config
-                args.config = '{0}.sesame'.format(args.config)
-
         # fail if input file doesn't exist
-        elif not os.path.exists(args.config):
-            raise ConfigError('Application config doesn\'t exist at {0}'.format(args.config))
+        if not os.path.exists(args.inputfile):
+            raise ConfigError('File doesn\'t exist at {0}'.format(args.inputfile))
 
         # check input not zero-length
-        statinfo = os.stat(args.config)
+        statinfo = os.stat(args.inputfile)
         if statinfo.st_size == 0:
             raise ConfigError('Input file is zero-length')
 
-        # assume file to be decrypted ends with .sesame
-        elif args.config.endswith('.sesame'):
-            output_path = args.config[0:-7]
+        with make_secure_temp_directory() as working_dir:
+            # create a temporary file
+            working_file = tempfile.mkstemp(dir=working_dir)
 
-        else:
-            output_path = '{0}.decrypted'.format(args.config)
+            # iterate all keys; first successful key will break
+            for key in keys:
+                try:
+                    # decrypt the input file; writing into our working file
+                    with open(args.inputfile, 'rb') as i:
+                        with os.fdopen(working_file[0], 'wb') as o:
+                            o.write(zlib.decompress(key.Decrypt(i.read())))
+                        break
+                except KeyczarError as e:
+                    raise ConfigError(
+                        'An error occurred in keyczar.Decrypt\n  {0}:{1}'.format(
+                            e.__class__.__name__, e
+                        )
+                    )
 
-        # verify existence of output_file
-        if os.path.exists(output_path) and _ask_overwrite(output_path) is False:
-            return
+            # untar the decrypted temp file
+            with tarfile.open(working_file[1], 'r') as tar:
+                tar.extractall(path=working_dir)
 
-        # decrypt the input file
-        for key in keys:
-            try:
-                with open(args.config, 'rb') as i:
-                    data = zlib.decompress(key.Decrypt(i.read()))
-            except KeyczarError as e:
-                raise ConfigError(
-                    'An error occurred in keyczar.Decrypt\n  {0}:{1}'.format(e.__class__.__name__, e)
-                )
 
-        # write the output file
-        with open(output_path, 'wb') as o:
-            o.write(data)
+            # get the list of items in working dir and sort by directories first
+            working_items = sorted(os.listdir(working_dir), cmp=_compare_files_and_dirs)
 
-        print 'Application config decrypted at {0}'.format(output_path)
+            # move all files to the current working path
+            for name in working_items:
+                if name != os.path.basename(working_file[1]):
+                    # create some full paths
+                    path = os.path.join(working_dir, name)
+                    dest = os.path.join(os.getcwd(), name)
+
+                    # ask user about overwrite
+                    if args.force is False and os.path.exists(dest):
+                        if _ask_overwrite(dest) is True:
+                            if os.path.isdir(dest):
+                                shutil.rmtree(dest)
+                            else:
+                                os.remove(dest)
+                        else:
+                            continue
+
+                    # move file to cwd
+                    shutil.move(path, dest)
 
 
 def _find_sesame_keys():
@@ -233,6 +259,28 @@ def _confirm(msg, default=True):
         return True if len(res) == 0 or res.lower().startswith('y') else False
     else:
         return True if len(res) > 0 and res.lower().startswith('y') else False
+
+
+def _compare_files_and_dirs(a, b):
+    isdira = os.path.isdir(a)
+    isdirb = os.path.isdir(b)
+    if isdira and not isdirb:
+        return -1
+    elif not isdira and isdirb:
+        return 1
+    else:
+        return 0
+
+
+@contextlib.contextmanager
+def make_secure_temp_directory():
+    temp_dir = tempfile.mkdtemp()
+    try:
+        yield temp_dir
+    except Exception as e:
+        raise e
+    finally:
+        shutil.rmtree(temp_dir)
 
 
 class ConfigError(Exception):
