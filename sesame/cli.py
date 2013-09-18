@@ -232,8 +232,12 @@ def _ask_create_key():
     return key
 
 
-def _ask_overwrite(filename):
-    return _confirm('File {0} exists. Overwrite?'.format(filename), default=False)
+def _ask_overwrite(path, isdir=False):
+    noun = 'Directory' if os.path.isdir(path) else 'File'
+    return _confirm(
+        '{0} {1} exists. Overwrite?'.format(noun, os.path.basename(path)),
+        default=False
+    )
 
 
 def _ask_decrypt_file(filename):
