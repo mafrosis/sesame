@@ -224,11 +224,12 @@ def _ask_create_key():
     if len(res) > 0 and not res.lower().startswith('y'):
         return None
 
-    key = AesKey.Generate()
-    with open('sesame.key', 'w') as f:
-        f.write(str(key))
+    # create a unique file to house our generated key
+    with tempfile.NamedTemporaryFile(prefix='sesame', suffix='.key', dir=os.getcwd(), delete=False) as keyfile:
+        key = AesKey.Generate()
+        keyfile.write(str(key))
 
-    print 'Encryption key created at sesame.key'
+    print 'Encryption key created at {0}'.format(os.path.basename(keyfile.name))
     return key
 
 

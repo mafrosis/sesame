@@ -1,3 +1,7 @@
+0.3.1
+
+Ensure generated keys have a unique filename
+
 0.3.0
 
 App CLI now imitates tar
