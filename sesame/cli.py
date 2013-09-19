@@ -9,6 +9,9 @@ import zlib
 from keyczar.keys import AesKey
 from keyczar.errors import KeyczarError
 
+MODE_ENCRYPT = 1
+MODE_DECRYPT = 2
+
 
 def entrypoint():
     try:
@@ -39,7 +42,7 @@ def parse_command_line():
         parents=[parent_parser],
         help='Encrypt a config file',
     )
-    pencrypt.set_defaults(mode='encrypt')
+    pencrypt.set_defaults(mode=MODE_ENCRYPT)
     pencrypt.add_argument(
         '-f', '--force', action='store_true',
         help='Force overwrite of existing encrypted file')
@@ -49,7 +52,7 @@ def parse_command_line():
         parents=[parent_parser],
         help='Decrypt a config file',
     )
-    pdecrypt.set_defaults(mode='decrypt')
+    pdecrypt.set_defaults(mode=MODE_DECRYPT)
     pdecrypt.add_argument(
         '-f', '--force', action='store_true',
         help='Force overwrite of existing decrypted file')
@@ -70,7 +73,7 @@ def _main(args):
                 keys = [key]
 
         elif len(keys) > 1:
-            if args.mode == 'encrypt':
+            if args.mode == MODE_ENCRYPT:
                 # ask the user if they want to use the first key found
                 if _confirm('No key supplied and {0} found. Use {1}?'.format(
                     len(keys), keys.keys()[0]
@@ -102,7 +105,8 @@ def _main(args):
     if len(keys) == 0:
         raise ConfigError('No keys provided')
 
-    if args.mode == 'encrypt':
+
+    if args.mode == MODE_ENCRYPT:
         # check destination exists
         if args.force is False and os.path.exists('{0}.sesame'.format(args.config)):
             if _ask_overwrite('{0}.sesame'.format(args.config)) is False:
@@ -126,7 +130,8 @@ def _main(args):
 
         print 'Application config encrypted at {0}.sesame'.format(args.config)
 
-    else:
+
+    elif args.mode == MODE_DECRYPT:
         # if input file doesn't exist, and .sesame does, ask to decrypt .sesame
         if not os.path.exists(args.config) and os.path.exists('{0}.sesame'.format(args.config)):
             if _confirm('Decrypt {0}.sesame?'.format(args.config), default=True):
