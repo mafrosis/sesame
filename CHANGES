@@ -2,6 +2,7 @@
 
 Ensure generated keys have a unique filename
 --try-all flag to try all decryption keys in current directory
+--output-dir option to decrypt into specific directory
 
 0.3.0
 

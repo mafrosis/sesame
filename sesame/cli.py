@@ -67,6 +67,9 @@ def parse_command_line():
         '-f', '--force', action='store_true',
         help='Force overwrite of existing decrypted file')
     pdecrypt.add_argument(
+        '-O', '--output-dir', default=os.getcwd(),
+        help='Extract files into a specific directory')
+    pdecrypt.add_argument(
         '-T', '--try-all', action='store_true',
         help='Search for keys from current directory and try all of them')
 
@@ -205,7 +208,7 @@ def _main(args):
                 if name != os.path.basename(working_file[1]):
                     # create some full paths
                     path = os.path.join(working_dir, name)
-                    dest = os.path.join(os.getcwd(), name)
+                    dest = os.path.join(args.output_dir, name)
 
                     # ask user about overwrite
                     if args.force is False and os.path.exists(dest):
