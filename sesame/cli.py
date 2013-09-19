@@ -11,6 +11,7 @@ import zlib
 
 from keyczar.keys import AesKey
 from keyczar.errors import KeyczarError
+from keyczar.errors import InvalidSignatureError
 
 MODE_ENCRYPT = 1
 MODE_DECRYPT = 2
@@ -65,6 +66,9 @@ def parse_command_line():
     pdecrypt.add_argument(
         '-f', '--force', action='store_true',
         help='Force overwrite of existing decrypted file')
+    pdecrypt.add_argument(
+        '-T', '--try-all', action='store_true',
+        help='Search for keys from current directory and try all of them')
 
     return parser.parse_args()
 
@@ -82,7 +86,7 @@ def _main(args):
                 keys = [key]
 
         elif len(keys) > 1:
-            if args.mode == MODE_ENCRYPT:
+            if args.mode == MODE_ENCRYPT or (args.mode == MODE_DECRYPT and args.try_all is False):
                 # ask the user if they want to use the first key found
                 if _confirm('No key supplied and {0} found. Use {1}?'.format(
                     len(keys), keys.keys()[0]
@@ -95,6 +99,9 @@ def _main(args):
                         keys = [key]
                     else:
                         return
+            else:
+                # --try-all flag was supplied
+                keys = keys.values()
         else:
             # use the only key found
             keys = [keys.items()[0][1]]
@@ -157,20 +164,33 @@ def _main(args):
             # create a temporary file
             working_file = tempfile.mkstemp(dir=working_dir)
 
+            success = False
+
             # iterate all keys; first successful key will break
             for key in keys:
                 try:
-                    # decrypt the input file; writing into our working file
+                    # decrypt the input file
                     with open(args.inputfile, 'rb') as i:
-                        with os.fdopen(working_file[0], 'wb') as o:
-                            o.write(zlib.decompress(key.Decrypt(i.read())))
-                        break
+                        data = zlib.decompress(key.Decrypt(i.read()))
+
+                    # write into our working file
+                    with os.fdopen(working_file[0], 'wb') as o:
+                        o.write(data)
+
+                    success = True
+                    break
+                except InvalidSignatureError as e:
+                    if args.try_all is False:
+                        raise ConfigError('Incorrect key')
                 except KeyczarError as e:
                     raise ConfigError(
                         'An error occurred in keyczar.Decrypt\n  {0}:{1}'.format(
                             e.__class__.__name__, e
                         )
                     )
+            # check failure
+            if success is False:
+                raise ConfigError('No valid keys for decryption')
 
             # untar the decrypted temp file
             with tarfile.open(working_file[1], 'r') as tar:

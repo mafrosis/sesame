@@ -1,6 +1,7 @@
 0.3.1
 
 Ensure generated keys have a unique filename
+--try-all flag to try all decryption keys in current directory
 
 0.3.0
 
