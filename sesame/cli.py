@@ -140,7 +140,15 @@ def _main(args):
             # create a tarfile of inputfiles
             with tarfile.open(os.path.join(working_dir, 'sesame.tar'), 'w') as tar:
                 for name in args.inputfile:
-                    tar.add(name)
+                    # TODO use warning to prompt user here
+                    if os.path.isabs(name):
+                        # fix absolute paths, same as tar does
+                        tar.add(name, arcname=name[1:])
+                    elif name.startswith('..'):
+                        # skip relative paths
+                        pass
+                    else:
+                        tar.add(name)
 
             try:
                 # encrypt the tarfile
