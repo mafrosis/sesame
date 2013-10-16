@@ -21,7 +21,7 @@ def entrypoint():
     try:
         args = parse_command_line()
         _main(args)
-    except ConfigError as e:
+    except SesameError as e:
         sys.stderr.write('{0}\n'.format(e))
         sys.exit(1)
 
@@ -122,7 +122,7 @@ def _main(args):
 
     # check user has provided a key
     if len(keys) == 0:
-        raise ConfigError('No keys provided')
+        raise SesameError('No keys provided')
 
 
     if args.mode == MODE_ENCRYPT:
@@ -134,7 +134,7 @@ def _main(args):
         # args.inputfile is a list of files
         for f in args.inputfile:
             if not os.path.exists(f):
-                raise ConfigError('File doesn\'t exist at {0}'.format(f))
+                raise SesameError('File doesn\'t exist at {0}'.format(f))
 
         with make_secure_temp_directory() as working_dir:
             # create a tarfile of inputfiles
@@ -148,7 +148,7 @@ def _main(args):
                     with open(args.outputfile, 'wb') as o:
                         o.write(keys[0].Encrypt(zlib.compress(i.read())))
             except KeyczarError as e:
-                raise ConfigError(
+                raise SesameError(
                     'An error occurred in keyczar.Encrypt\n  {0}:{1}'.format(e.__class__.__name__, e)
                 )
 
@@ -156,12 +156,12 @@ def _main(args):
     elif args.mode == MODE_DECRYPT:
         # fail if input file doesn't exist
         if not os.path.exists(args.inputfile):
-            raise ConfigError('File doesn\'t exist at {0}'.format(args.inputfile))
+            raise SesameError('File doesn\'t exist at {0}'.format(args.inputfile))
 
         # check input not zero-length
         statinfo = os.stat(args.inputfile)
         if statinfo.st_size == 0:
-            raise ConfigError('Input file is zero-length')
+            raise SesameError('Input file is zero-length')
 
         with make_secure_temp_directory() as working_dir:
             # create a temporary file
@@ -184,16 +184,16 @@ def _main(args):
                     break
                 except InvalidSignatureError as e:
                     if args.try_all is False:
-                        raise ConfigError('Incorrect key')
+                        raise SesameError('Incorrect key')
                 except KeyczarError as e:
-                    raise ConfigError(
+                    raise SesameError(
                         'An error occurred in keyczar.Decrypt\n  {0}:{1}'.format(
                             e.__class__.__name__, e
                         )
                     )
             # check failure
             if success is False:
-                raise ConfigError('No valid keys for decryption')
+                raise SesameError('No valid keys for decryption')
 
             # untar the decrypted temp file
             with tarfile.open(working_file[1], 'r') as tar:
@@ -313,5 +313,5 @@ def make_secure_temp_directory():
         shutil.rmtree(temp_dir)
 
 
-class ConfigError(Exception):
+class SesameError(Exception):
     pass
