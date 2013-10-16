@@ -203,25 +203,27 @@ def _main(args):
             # get the list of items in working dir and sort by directories first
             working_items = sorted(os.listdir(working_dir), cmp=_compare_files_and_dirs)
 
-            # move all files to the current working path
+            # remove the temp tar archive from the working files
+            working_items = [
+                n for n in working_items if n != os.path.basename(working_file[1])
+            ]
+
+            # move all files to the output path
             for name in working_items:
-                if name != os.path.basename(working_file[1]):
-                    # create some full paths
-                    path = os.path.join(working_dir, name)
-                    dest = os.path.join(args.output_dir, name)
+                # create some full paths
+                path = os.path.join(working_dir, name)
+                dest = os.path.join(args.output_dir, name)
 
-                    # ask user about overwrite
-                    if args.force is False and os.path.exists(dest):
-                        if _ask_overwrite(dest) is True:
-                            if os.path.isdir(dest):
-                                shutil.rmtree(dest)
-                            else:
-                                os.remove(dest)
-                        else:
-                            continue
+                # ask user about overwrite
+                if args.force is False and os.path.exists(dest):
+                    if _ask_overwrite(dest) is False:
+                        continue
 
-                    # move file to cwd
-                    shutil.move(path, dest)
+                # move file to output_dir
+                if os.path.isdir(path):
+                    shutil.move(path, args.output_dir)
+                else:
+                    shutil.copy(path, args.output_dir)
 
 
 def _find_sesame_keys():
