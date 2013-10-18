@@ -1,17 +1,16 @@
 import argparse
-import collections
-import contextlib
-import fnmatch
 import os
-import shutil
 import sys
-import tarfile
-import tempfile
-import zlib
 
-from keyczar.keys import AesKey
-from keyczar.errors import KeyczarError
-from keyczar.errors import InvalidSignatureError
+from sesame.core import decrypt
+from sesame.core import encrypt
+from sesame.core import SesameError
+
+from sesame.utils import _ask_create_key
+from sesame.utils import _ask_overwrite
+from sesame.utils import _confirm
+from sesame.utils import _find_sesame_keys
+from sesame.utils import _read_key
 
 MODE_ENCRYPT = 1
 MODE_DECRYPT = 2
@@ -19,8 +18,19 @@ MODE_DECRYPT = 2
 
 def entrypoint():
     try:
+        # setup and run argparse
         args = parse_command_line()
-        _main(args)
+
+        # locate encryption keys
+        keys = get_keys(args)
+
+        # check we have a key
+        if len(keys) == 0:
+            raise SesameError('No keys provided')
+
+        # run encrypt/decrypt
+        main(args, keys)
+
     except SesameError as e:
         sys.stderr.write('{0}\n'.format(e))
         sys.exit(1)
@@ -76,7 +86,10 @@ def parse_command_line():
     return parser.parse_args()
 
 
-def _main(args):
+def get_keys(args):
+    """
+    Get the set of keys to be used for this encrypt/decrypt
+    """
     keys = []
     if args.keyfile is None:
         # attempt to locate a key
@@ -120,11 +133,10 @@ def _main(args):
             if key is not None:
                 keys = [key]
 
-    # check user has provided a key
-    if len(keys) == 0:
-        raise SesameError('No keys provided')
+    return keys
 
 
+def main(args, keys):
     if args.mode == MODE_ENCRYPT:
         # check if destination exists
         if args.force is False and os.path.exists(args.outputfile):
@@ -136,30 +148,7 @@ def _main(args):
             if not os.path.exists(f):
                 raise SesameError('File doesn\'t exist at {0}'.format(f))
 
-        with make_secure_temp_directory() as working_dir:
-            # create a tarfile of inputfiles
-            with tarfile.open(os.path.join(working_dir, 'sesame.tar'), 'w') as tar:
-                for name in args.inputfile:
-                    # TODO use warning to prompt user here
-                    if os.path.isabs(name):
-                        # fix absolute paths, same as tar does
-                        tar.add(name, arcname=name[1:])
-                    elif name.startswith('..'):
-                        # skip relative paths
-                        pass
-                    else:
-                        tar.add(name)
-
-            try:
-                # encrypt the tarfile
-                with open(os.path.join(working_dir, 'sesame.tar'), 'rb') as i:
-                    with open(args.outputfile, 'wb') as o:
-                        o.write(keys[0].Encrypt(zlib.compress(i.read())))
-            except KeyczarError as e:
-                raise SesameError(
-                    'An error occurred in keyczar.Encrypt\n  {0}:{1}'.format(e.__class__.__name__, e)
-                )
-
+        encrypt(args.inputfile, args.outputfile, keys)
 
     elif args.mode == MODE_DECRYPT:
         # fail if input file doesn't exist
@@ -171,155 +160,4 @@ def _main(args):
         if statinfo.st_size == 0:
             raise SesameError('Input file is zero-length')
 
-        with make_secure_temp_directory() as working_dir:
-            # create a temporary file
-            working_file = tempfile.mkstemp(dir=working_dir)
-
-            success = False
-
-            # iterate all keys; first successful key will break
-            for key in keys:
-                try:
-                    # decrypt the input file
-                    with open(args.inputfile, 'rb') as i:
-                        data = zlib.decompress(key.Decrypt(i.read()))
-
-                    # write into our working file
-                    with os.fdopen(working_file[0], 'wb') as o:
-                        o.write(data)
-
-                    success = True
-                    break
-                except InvalidSignatureError as e:
-                    if args.try_all is False:
-                        raise SesameError('Incorrect key')
-                except KeyczarError as e:
-                    raise SesameError(
-                        'An error occurred in keyczar.Decrypt\n  {0}:{1}'.format(
-                            e.__class__.__name__, e
-                        )
-                    )
-            # check failure
-            if success is False:
-                raise SesameError('No valid keys for decryption')
-
-            # untar the decrypted temp file
-            with tarfile.open(working_file[1], 'r') as tar:
-                tar.extractall(path=working_dir)
-
-
-            # get the list of items in working dir and sort by directories first
-            working_items = sorted(os.listdir(working_dir), cmp=_compare_files_and_dirs)
-
-            # remove the temp tar archive from the working files
-            working_items = [
-                n for n in working_items if n != os.path.basename(working_file[1])
-            ]
-
-            # move all files to the output path
-            for name in working_items:
-                # create some full paths
-                path = os.path.join(working_dir, name)
-                dest = os.path.join(args.output_dir, name)
-
-                # ask user about overwrite
-                if args.force is False and os.path.exists(dest):
-                    if _ask_overwrite(dest) is False:
-                        continue
-
-                # move file to output_dir
-                if os.path.isdir(path):
-                    shutil.move(path, args.output_dir)
-                else:
-                    shutil.copy(path, args.output_dir)
-
-
-def _find_sesame_keys():
-    # use OrderedDict to maintain order in which keys are found
-    keys = collections.OrderedDict()
-    for root, dirs, files in os.walk(os.getcwd()):
-        for filename in fnmatch.filter(files, '*.key'):
-            try:
-                keys[filename] = _read_key(os.path.join(root, filename))
-            except (ValueError, KeyError):
-                pass
-    return keys
-
-
-def _read_key(key_path):
-    with open(key_path, 'r') as f:
-        data = f.read()
-    return AesKey.Read(data)
-
-
-def _ask_create_key():
-    res = raw_input('Encryption key not provided. Create? [Y/n] ')
-    if len(res) > 0 and not res.lower().startswith('y'):
-        return None
-
-    # create a unique file to house our generated key
-    with tempfile.NamedTemporaryFile(prefix='sesame', suffix='.key', dir=os.getcwd(), delete=False) as keyfile:
-        key = AesKey.Generate()
-        keyfile.write(str(key))
-
-    print 'Encryption key created at {0}'.format(os.path.basename(keyfile.name))
-    return key
-
-
-def _ask_overwrite(path, isdir=False):
-    noun = 'Directory' if os.path.isdir(path) else 'File'
-    return _confirm(
-        '{0} {1} exists. Overwrite?'.format(noun, os.path.basename(path)),
-        default=False
-    )
-
-
-def _ask_decrypt_file(filename):
-    return _confirm('Found {0}. Do you want to decrypt this file?'.format(filename), default=False)
-
-
-def _confirm(msg, default=True):
-    """
-    Display confirm prompt on command line
-
-    msg:
-        The message to display to the user
-    default:
-        Default True/False (yes/no) at the prompt
-    """
-    if default is True:
-        display = '{0} [Y/n] '.format(msg)
-    else:
-        display = '{0} [y/N] '.format(msg)
-
-    res = raw_input(display)
-    if default is True:
-        return True if len(res) == 0 or res.lower().startswith('y') else False
-    else:
-        return True if len(res) > 0 and res.lower().startswith('y') else False
-
-
-def _compare_files_and_dirs(a, b):
-    isdira = os.path.isdir(a)
-    isdirb = os.path.isdir(b)
-    if isdira and not isdirb:
-        return -1
-    elif not isdira and isdirb:
-        return 1
-    else:
-        return 0
-
-
-@contextlib.contextmanager
-def make_secure_temp_directory():
-    temp_dir = tempfile.mkdtemp()
-    try:
-        yield temp_dir
-    except Exception as e:
-        raise e
-    finally:
-        shutil.rmtree(temp_dir)
-
-
-class SesameError(Exception):
-    pass
+        decrypt(args.inputfile, args.force, args.output_dir, args.try_all)
