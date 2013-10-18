@@ -26,17 +26,25 @@ def _read_key(key_path):
     return AesKey.Read(data)
 
 
-def _ask_create_key():
+def _ask_create_key(directory=os.getcwd()):
     res = raw_input('Encryption key not provided. Create? [Y/n] ')
     if len(res) > 0 and not res.lower().startswith('y'):
         return None
 
-    # create a unique file to house our generated key
-    with tempfile.NamedTemporaryFile(prefix='sesame', suffix='.key', dir=os.getcwd(), delete=False) as keyfile:
-        key = AesKey.Generate()
-        keyfile.write(str(key))
+    return _create_key(directory)
 
-    print 'Encryption key created at {0}'.format(os.path.basename(keyfile.name))
+
+def _create_key(directory, write=True):
+    # generate a new key
+    key = AesKey.Generate()
+
+    if write is True:
+        # create a unique file to house our generated key
+        with tempfile.NamedTemporaryFile(prefix='sesame', suffix='.key', dir=directory, delete=False) as keyfile:
+            keyfile.write(str(key))
+
+        print 'Encryption key created at {0}'.format(os.path.basename(keyfile.name))
+
     return key
 
 
