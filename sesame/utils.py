@@ -1,5 +1,6 @@
 import collections
 import contextlib
+import errno
 import fnmatch
 import os
 import shutil
@@ -81,17 +82,6 @@ def _confirm(msg, default=True):
         return True if len(res) > 0 and res.lower().startswith('y') else False
 
 
-def _compare_files_and_dirs(a, b):
-    isdira = os.path.isdir(a)
-    isdirb = os.path.isdir(b)
-    if isdira and not isdirb:
-        return -1
-    elif not isdira and isdirb:
-        return 1
-    else:
-        return 0
-
-
 @contextlib.contextmanager
 def make_secure_temp_directory():
     temp_dir = tempfile.mkdtemp()
@@ -102,3 +92,12 @@ def make_secure_temp_directory():
     finally:
         shutil.rmtree(temp_dir)
 
+
+def mkdir_p(path):
+    """ http://stackoverflow.com/a/600612/425050 """
+    try:
+        os.makedirs(path)
+    except OSError as exc: # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else: raise

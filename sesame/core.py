@@ -8,8 +8,8 @@ from keyczar.errors import KeyczarError
 from keyczar.errors import InvalidSignatureError
 
 from sesame.utils import _ask_overwrite
-from sesame.utils import _compare_files_and_dirs
 from sesame.utils import make_secure_temp_directory
+from sesame.utils import mkdir_p
 
 
 def encrypt(inputfiles, outputfile, keys):
@@ -75,13 +75,11 @@ def decrypt(inputfile, keys, force=False, output_dir=None, try_all=False):
         with tarfile.open(working_file[1], 'r') as tar:
             tar.extractall(path=working_dir)
 
-
-        # get the list of items in working dir and sort by directories first
-        working_items = sorted(os.listdir(working_dir), cmp=_compare_files_and_dirs)
-
-        # remove the temp tar archive from the working files
+        # get list of all files in working dir, including their full path
         working_items = [
-            n for n in working_items if n != os.path.basename(working_file[1])
+            os.path.join(rootdir[len(working_dir)+1:], filename)
+            for rootdir, dirnames, filenames in os.walk(working_dir)
+            for filename in filenames if filename != os.path.basename(working_file[1])
         ]
 
         # move all files to the output path
@@ -95,11 +93,11 @@ def decrypt(inputfile, keys, force=False, output_dir=None, try_all=False):
                 if _ask_overwrite(dest) is False:
                     continue
 
+            # ensure destination dirs exist
+            mkdir_p(os.path.dirname(dest))
+
             # move file to output_dir
-            if os.path.isdir(path):
-                shutil.move(path, output_dir)
-            else:
-                shutil.copy(path, output_dir)
+            shutil.copy(path, dest)
 
 
 class SesameError(Exception):
