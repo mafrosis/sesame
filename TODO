@@ -1,0 +1,4 @@
+add --create-key flag
+support for large files
+key must be provided with --force
+add an --no-compress flag
