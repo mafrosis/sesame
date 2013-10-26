@@ -7,7 +7,7 @@ import zlib
 from keyczar.errors import KeyczarError
 from keyczar.errors import InvalidSignatureError
 
-from sesame.utils import _ask_overwrite
+from sesame.utils import ask_overwrite
 from sesame.utils import make_secure_temp_directory
 from sesame.utils import mkdir_p
 
@@ -90,7 +90,7 @@ def decrypt(inputfile, keys, force=False, output_dir=None, try_all=False):
 
             # ask user about overwrite
             if force is False and os.path.exists(dest):
-                if _ask_overwrite(dest) is False:
+                if ask_overwrite(dest) is False:
                     continue
 
             # ensure destination dirs exist

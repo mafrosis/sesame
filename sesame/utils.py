@@ -9,33 +9,33 @@ import tempfile
 from keyczar.keys import AesKey
 
 
-def _find_sesame_keys():
+def find_sesame_keys():
     # use OrderedDict to maintain order in which keys are found
     keys = collections.OrderedDict()
     for root, dirs, files in os.walk(os.getcwd()):
         for filename in fnmatch.filter(files, '*.key'):
             try:
-                keys[filename] = _read_key(os.path.join(root, filename))
+                keys[filename] = read_key(os.path.join(root, filename))
             except (ValueError, KeyError):
                 pass
     return keys
 
 
-def _read_key(key_path):
+def read_key(key_path):
     with open(key_path, 'r') as f:
         data = f.read()
     return AesKey.Read(data)
 
 
-def _ask_create_key(directory=os.getcwd()):
+def ask_create_key(directory=os.getcwd()):
     res = raw_input('Encryption key not provided. Create? [Y/n] ')
     if len(res) > 0 and not res.lower().startswith('y'):
         return None
 
-    return _create_key(directory)
+    return create_key(directory)
 
 
-def _create_key(directory, write=True):
+def create_key(directory, write=True):
     # generate a new key
     key = AesKey.Generate()
 
@@ -49,19 +49,19 @@ def _create_key(directory, write=True):
     return key
 
 
-def _ask_overwrite(path, isdir=False):
+def ask_overwrite(path, isdir=False):
     noun = 'Directory' if os.path.isdir(path) else 'File'
-    return _confirm(
+    return confirm(
         '{0} {1} exists. Overwrite?'.format(noun, os.path.basename(path)),
         default=False
     )
 
 
-def _ask_decrypt_file(filename):
-    return _confirm('Found {0}. Do you want to decrypt this file?'.format(filename), default=False)
+def ask_decrypt_file(filename):
+    return confirm('Found {0}. Do you want to decrypt this file?'.format(filename), default=False)
 
 
-def _confirm(msg, default=True):
+def confirm(msg, default=True):
     """
     Display confirm prompt on command line
 

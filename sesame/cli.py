@@ -6,11 +6,11 @@ from sesame.core import decrypt
 from sesame.core import encrypt
 from sesame.core import SesameError
 
-from sesame.utils import _ask_create_key
-from sesame.utils import _ask_overwrite
-from sesame.utils import _confirm
-from sesame.utils import _find_sesame_keys
-from sesame.utils import _read_key
+from sesame.utils import ask_create_key
+from sesame.utils import ask_overwrite
+from sesame.utils import confirm
+from sesame.utils import find_sesame_keys
+from sesame.utils import read_key
 
 MODE_ENCRYPT = 1
 MODE_DECRYPT = 2
@@ -93,24 +93,24 @@ def get_keys(args):
     keys = []
     if args.keyfile is None:
         # attempt to locate a key
-        keys = _find_sesame_keys()
+        keys = find_sesame_keys()
 
         if len(keys) == 0:
             # ask the user to generate one
-            key = _ask_create_key()
+            key = ask_create_key()
             if key is not None:
                 keys = [key]
 
         elif len(keys) > 1:
             if args.mode == MODE_ENCRYPT or (args.mode == MODE_DECRYPT and args.try_all is False):
                 # ask the user if they want to use the first key found
-                if _confirm('No key supplied and {0} found. Use {1}?'.format(
+                if confirm('No key supplied and {0} found. Use {1}?'.format(
                     len(keys), keys.keys()[0]
                 ), default=True):
                     keys = [keys.items()[0][1]]
                 else:
                     # ask the user to generate one
-                    key = _ask_create_key()
+                    key = ask_create_key()
                     if key is not None:
                         keys = [key]
                     else:
@@ -124,12 +124,12 @@ def get_keys(args):
     else:
         # create a key
         if os.path.exists(args.keyfile) is False:
-            key = _ask_create_key()
+            key = ask_create_key()
             if key is not None:
                 keys = [key]
         else:
             # load the single key supplied
-            key = _read_key(os.path.join(args.keyfile))
+            key = read_key(os.path.join(args.keyfile))
             if key is not None:
                 keys = [key]
 
@@ -140,7 +140,7 @@ def main(args, keys):
     if args.mode == MODE_ENCRYPT:
         # check if destination exists
         if args.force is False and os.path.exists(args.outputfile):
-            if _ask_overwrite(args.outputfile) is False:
+            if ask_overwrite(args.outputfile) is False:
                 return
 
         # args.inputfile is a list of files
