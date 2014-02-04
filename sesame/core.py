@@ -67,37 +67,68 @@ def decrypt(inputfile, keys, force=False, output_dir=None, try_all=False):
                         e.__class__.__name__, e
                     )
                 )
+
         # check failure
         if success is False:
             raise SesameError('No valid keys for decryption')
 
-        # untar the decrypted temp file
-        with tarfile.open(working_file[1], 'r') as tar:
-            tar.extractall(path=working_dir)
+        if tarfile.is_tarfile(working_file[1]):
+            # untar the decrypted temp file
+            with tarfile.open(working_file[1], 'r') as tar:
+                tar.extractall(path=working_dir)
 
-        # get list of all files in working dir, including their full path
-        working_items = [
-            os.path.join(rootdir[len(working_dir)+1:], filename)
-            for rootdir, dirnames, filenames in os.walk(working_dir)
-            for filename in filenames if filename != os.path.basename(working_file[1])
-        ]
+            # get list of full paths to all files in working dir
+            # ignoring the decrypted tarfile
+            working_items = [
+                os.path.join(rootdir[len(working_dir)+1:], filename)
+                for rootdir, dirnames, filenames in os.walk(working_dir)
+                for filename in filenames if filename != os.path.basename(working_file[1])
+            ]
 
-        # move all files to the output path
-        for name in working_items:
-            # create some full paths
-            path = os.path.join(working_dir, name)
-            dest = os.path.join(output_dir, name)
+            for filename in working_items:
+                # move all files to the output path
+                move_output_file(
+                    path=os.path.join(working_dir, filename),
+                    dest=os.path.join(output_dir, filename),
+                    force=force,
+                )
 
-            # ask user about overwrite
-            if force is False and os.path.exists(dest):
-                if ask_overwrite(dest) is False:
-                    continue
+        else:
+            # older versions of Sesame didn't wrap a tarfile and
+            # encrypted only a single file at a time
+            working_items = [os.path.join(working_dir[len(working_dir)+1:], )]
 
-            # ensure destination dirs exist
-            mkdir_p(os.path.dirname(dest))
+            # attempt to create an output filename using old Sesame logic
+            if inputfile.endswith(".encrypted"):
+                move_output_file(
+                    path=working_file[1],
+                    dest=os.path.join(output_dir, inputfile[0:-10]),
+                    force=force,
+                )
+            else:
+                # create a secure random-named file
+                with tempfile.NamedTemporaryFile(suffix='.sesame-decrypted', dir=output_dir, delete=False) as keyfile:
+                    keyfile.write("\0")
 
-            # move file to output_dir
-            shutil.copy(path, dest)
+                # overwrite the file just created with the decrypted file
+                move_output_file(
+                    path=working_file[1],
+                    dest=os.path.join(output_dir, keyfile.name),
+                    force=True,
+                )
+
+
+def move_output_file(path, dest, force=False):
+    # ask user about overwrite
+    if force is False and os.path.exists(dest):
+        if ask_overwrite(dest) is False:
+            return
+
+    # ensure destination dirs exist
+    mkdir_p(os.path.dirname(dest))
+
+    # move file to output_dir
+    shutil.copy(path, dest)
 
 
 class SesameError(Exception):
