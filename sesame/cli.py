@@ -148,7 +148,11 @@ def main(args, keys):
             if not os.path.exists(f):
                 raise SesameError('File doesn\'t exist at {0}'.format(f))
 
-        encrypt(args.inputfile, args.outputfile, keys)
+        encrypt(
+            inputfiles=args.inputfile,
+            outputfile=args.outputfile,
+            keys=keys
+        )
 
     elif args.mode == MODE_DECRYPT:
         # fail if input file doesn't exist
@@ -160,4 +164,10 @@ def main(args, keys):
         if statinfo.st_size == 0:
             raise SesameError('Input file is zero-length')
 
-        decrypt(args.inputfile, args.force, args.output_dir, args.try_all)
+        decrypt(
+            inputfile=args.inputfile,
+            keys=keys,
+            force=args.force,
+            output_dir=args.output_dir,
+            try_all=args.try_all
+        )
