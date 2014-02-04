@@ -34,21 +34,37 @@ To install sesame, simply:
 Usage
 -----
 
-The interface to Sesame is intended to be as simple as possible. There are only two
-commands: ``encrypt`` and ``decrypt`` and each of these has only two parameters
-available: ``config`` and ``keyfile``.
-
-When calling ``encrypt`` the keyfile parameter is optional - if you do not supply it,
-Sesame will prompt you to generate a new key.
+The interface to Sesame intentionally resembles that of ``tar``. There are only two
+sub-commands: ``encrypt`` and ``decrypt`` as described below:
 
 .. code-block:: bash
 
-    $ sesame -h
-    usage: sesame encrypt [-h] -c CONFIG [-k KEYFILE]
+    usage: sesame encrypt [-h] [-k KEYFILE] [-f]
+                          outputfile inputfile [inputfile ...]
+
+    positional arguments:
+      outputfile            Encrypted file to be created
+      inputfile             Files to be encrypted
 
     optional arguments:
       -h, --help            show this help message and exit
-      -c CONFIG, --config CONFIG
-                            Path to your app config
       -k KEYFILE, --keyfile KEYFILE
                             Path to keyczar encryption key
+      -f, --force           Force overwrite of existing encrypted file
+
+.. code-block:: bash
+
+    usage: sesame decrypt [-h] [-k KEYFILE] [-f] [-O OUTPUT_DIR] [-T] inputfile
+
+    positional arguments:
+      inputfile             File to be decrypted
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      -k KEYFILE, --keyfile KEYFILE
+                            Path to keyczar encryption key
+      -f, --force           Force overwrite of existing decrypted file
+      -O OUTPUT_DIR, --output-dir OUTPUT_DIR
+                            Extract files into a specific directory
+      -T, --try-all         Search for keys from current directory and try all of
+                            them
