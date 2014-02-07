@@ -21,15 +21,17 @@ def entrypoint():
         # setup and run argparse
         args = parse_command_line()
 
-        # locate encryption keys
-        keys = get_keys(args)
+        # ensure input is good
+        if verify_input_files(args.inputfile):
+            # locate encryption keys
+            keys = get_keys(args)
 
-        # check we have a key
-        if len(keys) == 0:
-            raise SesameError('No keys provided')
+            # check we have a key
+            if len(keys) == 0:
+                raise SesameError('No keys provided')
 
-        # run encrypt/decrypt
-        main(args, keys)
+            # run encrypt/decrypt
+            main(args, keys)
 
     except SesameError as e:
         sys.stderr.write('{0}\n'.format(e))
@@ -84,6 +86,24 @@ def parse_command_line():
         help='Search for keys from current directory and try all of them')
 
     return parser.parse_args()
+
+
+def verify_input_files(inputfiles):
+    # during encrypt, inputfiles is a list
+    if isinstance(inputfiles, list) is False:
+        inputfiles = [inputfiles]
+
+    for f in inputfiles:
+        # fail if input file doesn't exist
+        if not os.path.exists(f):
+            raise SesameError('File doesn\'t exist at {0}'.format(f))
+
+        # check input not zero-length
+        statinfo = os.stat(f)
+        if statinfo.st_size == 0:
+            raise SesameError('Input file is zero-length ({0})'.format(f))
+
+    return True
 
 
 def get_keys(args):
@@ -143,11 +163,6 @@ def main(args, keys):
             if ask_overwrite(args.outputfile) is False:
                 return
 
-        # args.inputfile is a list of files
-        for f in args.inputfile:
-            if not os.path.exists(f):
-                raise SesameError('File doesn\'t exist at {0}'.format(f))
-
         encrypt(
             inputfiles=args.inputfile,
             outputfile=args.outputfile,
@@ -155,15 +170,6 @@ def main(args, keys):
         )
 
     elif args.mode == MODE_DECRYPT:
-        # fail if input file doesn't exist
-        if not os.path.exists(args.inputfile):
-            raise SesameError('File doesn\'t exist at {0}'.format(args.inputfile))
-
-        # check input not zero-length
-        statinfo = os.stat(args.inputfile)
-        if statinfo.st_size == 0:
-            raise SesameError('Input file is zero-length')
-
         decrypt(
             inputfile=args.inputfile,
             keys=keys,
