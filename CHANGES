@@ -1,3 +1,9 @@
+0.3.2
+
+Display relative paths of keys found during search
+Verify files exist early (fixes Issue #1)
+--version prints the current sesame version
+
 0.3.1
 
 Ensure generated keys have a unique filename
