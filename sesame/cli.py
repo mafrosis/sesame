@@ -104,7 +104,7 @@ def get_keys(args):
         elif len(keys) >= 1:
             if args.mode == MODE_ENCRYPT or (args.mode == MODE_DECRYPT and args.try_all is False):
                 # ask the user if they want to use the first key found
-                if confirm('No key supplied and {0} found. Use {1}?'.format(
+                if confirm("No key supplied and {0} found. Use '{1}'?".format(
                     len(keys), keys.keys()[0]
                 ), default=True):
                     keys = [keys.items()[0][1]]

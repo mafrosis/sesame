@@ -15,7 +15,16 @@ def find_sesame_keys():
     for root, dirs, files in os.walk(os.getcwd()):
         for filename in fnmatch.filter(files, '*.key'):
             try:
-                keys[filename] = read_key(os.path.join(root, filename))
+                # attempt to read the sesame key; non-keyczar files will error
+                key = read_key(os.path.join(root, filename))
+
+                # generate a relative path to the key from current working dir
+                relative_path = root[len(os.getcwd()):]
+                if relative_path.startswith(os.path.sep):
+                    relative_path = relative_path[1:]
+
+                keys[os.path.join(relative_path, filename)] = key
+
             except (ValueError, KeyError):
                 pass
     return keys
