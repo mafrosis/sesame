@@ -2,6 +2,8 @@ import argparse
 import os
 import sys
 
+from sesame import __version__
+
 from sesame.core import decrypt
 from sesame.core import encrypt
 from sesame.core import SesameError
@@ -43,6 +45,12 @@ def parse_command_line():
         description='Sesame config file encryption and decryption'
     )
     subparsers = parser.add_subparsers()
+
+    # print the current sesame version
+    parser.add_argument(
+        '-v', '--version', action='version',
+        version='sesame {0}'.format(__version__),
+        help='Print the current Sesame version')
 
     # setup the arguments for both encrypt and decrypt
     parent_parser = argparse.ArgumentParser(add_help=False)
