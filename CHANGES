@@ -1,3 +1,8 @@
+0.3.3
+
+BUG: Don't ask to create a key on decrypt
+Smarter handling of keyfile file encodings
+
 0.3.2
 
 Display relative paths of keys found during search
