@@ -1,14 +1,18 @@
 from __future__ import absolute_import
 
+import codecs
 import collections
 import contextlib
 import errno
 import fnmatch
+import json
 import os
 import shutil
 import tempfile
 
 from keyczar.keys import AesKey
+
+from . import SesameError
 
 
 def find_sesame_keys():
@@ -33,9 +37,25 @@ def find_sesame_keys():
 
 
 def read_key(key_path):
-    with open(key_path, 'r') as f:
-        data = f.read()
-    return AesKey.Read(data)
+    # attempt decode key with various codecs
+    for codec in ('utf-8', 'latin1', 'utf-8-sig'):
+        try:
+            with codecs.open(key_path, 'rU', encoding=codec) as f:
+                key = f.read()
+                json.loads(key)
+                break
+
+        except (UnicodeDecodeError, ValueError), e:
+            # retry with alternate codec
+            continue
+        except IOError, e:
+            raise SesameError('Problem opening keyfile {0}: {1}'.format(key_path, e))
+
+    if key is None:
+        raise SesameError("Could not decode keyfile")
+
+    # pass correctly decoded key data to keyczar
+    return AesKey.Read(key)
 
 
 def ask_create_key(directory=os.getcwd()):
