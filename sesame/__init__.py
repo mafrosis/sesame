@@ -10,5 +10,8 @@ __license__ = 'Simplified BSD License'
 __copyright__ = 'Copyright 2014 Matt Black'
 
 
+MODE_ENCRYPT = 1
+MODE_DECRYPT = 2
+
 class SesameError(Exception):
     pass

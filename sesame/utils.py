@@ -13,6 +13,57 @@ import tempfile
 from keyczar.keys import AesKey
 
 from . import SesameError
+from . import MODE_ENCRYPT, MODE_DECRYPT
+
+
+def get_keys(args):
+    """
+    Get the set of keys to be used for this encrypt/decrypt
+    """
+    keys = []
+    if args.keyfile is None:
+        # attempt to locate a key
+        keys = find_sesame_keys()
+
+        if len(keys) == 0:
+            # ask the user to generate one
+            key = ask_create_key()
+            if key is not None:
+                keys = [key]
+
+        elif len(keys) >= 1:
+            if args.mode == MODE_ENCRYPT or (args.mode == MODE_DECRYPT and args.try_all is False):
+                # ask the user if they want to use the first key found
+                if confirm("No key supplied and {0} found. Use '{1}'?".format(
+                    len(keys), keys.keys()[0]
+                ), default=True):
+                    keys = [keys.items()[0][1]]
+                else:
+                    # ask the user to generate one
+                    key = ask_create_key()
+                    if key is not None:
+                        keys = [key]
+                    else:
+                        return
+            else:
+                # --try-all flag was supplied
+                keys = keys.values()
+        else:
+            # use the only key found
+            keys = [keys.items()[0][1]]
+    else:
+        # create a key
+        if os.path.exists(args.keyfile) is False:
+            key = ask_create_key()
+            if key is not None:
+                keys = [key]
+        else:
+            # load the single key supplied
+            key = read_key(os.path.join(args.keyfile))
+            if key is not None:
+                keys = [key]
+
+    return keys
 
 
 def find_sesame_keys():
@@ -34,6 +85,24 @@ def find_sesame_keys():
             except (ValueError, KeyError):
                 pass
     return keys
+
+
+def verify_input_files(inputfiles):
+    # during encrypt, inputfiles is a list
+    if isinstance(inputfiles, list) is False:
+        inputfiles = [inputfiles]
+
+    for f in inputfiles:
+        # fail if input file doesn't exist
+        if not os.path.exists(f):
+            raise SesameError('File doesn\'t exist at {0}'.format(f))
+
+        # check input not zero-length
+        statinfo = os.stat(f)
+        if statinfo.st_size == 0:
+            raise SesameError('Input file is zero-length ({0})'.format(f))
+
+    return True
 
 
 def read_key(key_path):
