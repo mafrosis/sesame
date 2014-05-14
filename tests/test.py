@@ -9,7 +9,7 @@ import uuid
 from sesame.core import decrypt
 from sesame.core import encrypt
 
-from sesame.utils import _create_key
+from sesame.utils import create_key
 from sesame.utils import make_secure_temp_directory
 
 from utils import cd
@@ -31,7 +31,7 @@ class TestSesame(object):
         self.file_timestamps = self.file_contents.copy()
 
         # create a key for the tests
-        self.key = _create_key(None, write=False)
+        self.key = create_key(None, write=False)
 
         # setup files in subdirectory
         for path in self.file_contents.keys():
@@ -57,7 +57,7 @@ class TestSesame(object):
         shutil.rmtree(self.working_dir)
 
 
-    def test_create_key(self):
+    def testcreate_key(self):
         pass
 
 
