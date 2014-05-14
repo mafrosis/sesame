@@ -17,18 +17,22 @@ Cryptography
 Sesame leans on a little known project called `keyczar <http://www.keyczar.org/>`_,
 which was originally built by members of the Google Security Team.
 
-Keyczar in turn builds upon `pycrypto <https://pypi.python.org/pypi/pycrypto>`_,
-and aims to provide sane defaults for your crypto.
+Keyczar in turn builds upon `pycrypto <https://pypi.python.org/pypi/pycrypto>`_
+which aims to provide sane defaults for your Python crypto.
 
 
 Installation
 ------------
 
-To install sesame, simply:
+To install ``sesame``, simply:
 
 .. code-block:: bash
 
-    $ pip install sesame
+    $ pip install --pre sesame
+
+Since pip version 1.4 the ``--pre`` parameter is necessary since ``keyczar`` is
+still an alpha release. People using earlier versions of pip can omit the
+``--pre``.
 
 
 Usage
