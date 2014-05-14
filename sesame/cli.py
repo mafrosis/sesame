@@ -39,6 +39,7 @@ def entrypoint():
 
     except SesameError as e:
         sys.stderr.write('{0}\n'.format(e))
+        sys.stderr.flush()
         sys.exit(1)
 
 
