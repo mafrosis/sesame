@@ -1,18 +1,20 @@
+from __future__ import absolute_import
+
 import argparse
 import os
 import sys
 
-from sesame import __version__
+from . import __version__
+from . import SesameError
 
-from sesame.core import decrypt
-from sesame.core import encrypt
-from sesame.core import SesameError
+from .core import decrypt
+from .core import encrypt
 
-from sesame.utils import ask_create_key
-from sesame.utils import ask_overwrite
-from sesame.utils import confirm
-from sesame.utils import find_sesame_keys
-from sesame.utils import read_key
+from .utils import ask_create_key
+from .utils import ask_overwrite
+from .utils import confirm
+from .utils import find_sesame_keys
+from .utils import read_key
 
 MODE_ENCRYPT = 1
 MODE_DECRYPT = 2

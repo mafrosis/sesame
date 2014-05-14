@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import os
 import shutil
 import tarfile
@@ -7,9 +9,10 @@ import zlib
 from keyczar.errors import KeyczarError
 from keyczar.errors import InvalidSignatureError
 
-from sesame.utils import ask_overwrite
-from sesame.utils import make_secure_temp_directory
-from sesame.utils import mkdir_p
+from . import SesameError
+from .utils import ask_overwrite
+from .utils import make_secure_temp_directory
+from .utils import mkdir_p
 
 
 def encrypt(inputfiles, outputfile, keys):
@@ -129,7 +132,3 @@ def move_output_file(path, dest, force=False):
 
     # move file to output_dir
     shutil.copy(path, dest)
-
-
-class SesameError(Exception):
-    pass
