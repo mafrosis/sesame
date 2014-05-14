@@ -21,12 +21,13 @@ def get_keys(args):
     Get the set of keys to be used for this encrypt/decrypt
     """
     keys = []
+
     if args.keyfile is None:
         # attempt to locate a key
         keys = find_sesame_keys()
 
         if len(keys) == 0:
-            # ask the user to generate one
+            # ask the user to generate a key
             key = ask_create_key()
             if key is not None:
                 keys = [key]
@@ -38,13 +39,15 @@ def get_keys(args):
                     len(keys), keys.keys()[0]
                 ), default=True):
                     keys = [keys.items()[0][1]]
-                else:
-                    # ask the user to generate one
+
+                elif args.mode == MODE_ENCRYPT:
+                    # user declined using found key, ask to generate a key for encryption
                     key = ask_create_key()
                     if key is not None:
                         keys = [key]
-                    else:
-                        return
+                else:
+                    # user declined using key for found decryption
+                    pass
             else:
                 # --try-all flag was supplied
                 keys = keys.values()
