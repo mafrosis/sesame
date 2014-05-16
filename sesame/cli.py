@@ -58,7 +58,7 @@ def parse_command_line():
         help='Path to keyczar encryption key')
 
     # setup parser for encrypt command
-    pencrypt = subparsers.add_parser('encrypt',
+    pencrypt = subparsers.add_parser('e',
         parents=[parent_parser],
         help='Encrypt one or more files',
     )
@@ -74,7 +74,7 @@ def parse_command_line():
         help='Force overwrite of existing encrypted file')
 
     # setup parser for decrypt command
-    pdecrypt = subparsers.add_parser('decrypt',
+    pdecrypt = subparsers.add_parser('d',
         parents=[parent_parser],
         help='Decrypt a file created with Sesame',
     )
