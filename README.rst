@@ -1,6 +1,19 @@
 Sesame: config file encryption
 ==============================
 
+.. image:: http://img.shields.io/travis/mafrosis/sesame.svg?style=flat-square&branch=develop
+ :target: https://travis-ci.org/mafrosis/sesame
+
+.. image:: https://img.shields.io/coveralls/mafrosis/sesame.svg?style=flat-square&branch=develop
+ :target: https://coveralls.io/r/mafrosis/sesame
+
+.. image:: http://img.shields.io/pypi/v/sesame.svg?style=flat-square
+ :target: https://pypi.python.org/pypi/sesame
+
+.. image:: http://img.shields.io/pypi/dm/sesame.svg?style=flat-square
+ :target: https://pypi.python.org/pypi/sesame
+
+
 Almost all applications have configuration of some kind, and often this config 
 is sensitive - database passwords, SMTP account details, API keys etc.
 
