@@ -41,11 +41,7 @@ To install ``sesame``, simply:
 
 .. code-block:: bash
 
-    $ pip install --pre sesame
-
-Since pip version 1.4 the ``--pre`` parameter is necessary since ``keyczar`` is
-still an alpha release. People using earlier versions of pip can omit the
-``--pre``.
+    $ pip install sesame
 
 
 Usage
