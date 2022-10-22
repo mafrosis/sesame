@@ -78,7 +78,26 @@ def decrypt(inputfile, keys, force=False, output_dir=None, try_all=False):
         if tarfile.is_tarfile(working_file[1]):
             # untar the decrypted temp file
             with tarfile.open(working_file[1], 'r') as tar:
-                tar.extractall(path=working_dir)
+                def is_within_directory(directory, target):
+                    
+                    abs_directory = os.path.abspath(directory)
+                    abs_target = os.path.abspath(target)
+                
+                    prefix = os.path.commonprefix([abs_directory, abs_target])
+                    
+                    return prefix == abs_directory
+                
+                def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+                
+                    for member in tar.getmembers():
+                        member_path = os.path.join(path, member.name)
+                        if not is_within_directory(path, member_path):
+                            raise Exception("Attempted Path Traversal in Tar File")
+                
+                    tar.extractall(path, members, numeric_owner=numeric_owner) 
+                    
+                
+                safe_extract(tar, path=working_dir)
 
             # get list of full paths to all files in working dir
             # ignoring the decrypted tarfile
